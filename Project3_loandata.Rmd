@@ -1,0 +1,60 @@
+---
+title: "Project3_loandata"
+author: "John Brown"
+date: "March 10, 2015"
+output: html_document
+---
+The first thing I did was to run a summary, and look at what the variables mean and their basic statistics: there are a lot here, and many of them seem to speak to the same thing. A few stand out that seem to be summary-type variables for credit-worthiness: "Prosper score," "CreditScoreRangeLower," "CreidtScoreRangeUpper." 
+
+One of the things we'd usually like to predict from data like this is whether a borrower will or won't default on a loan. So one variable I'd like to predict perhaps would be "LoanStatus". So I decided to look at what the distributions of scores looks like for different statuses. 
+
+```{r}
+library(ggplot2)
+df <- read.csv('prosperLoanData.csv')
+summary(df)
+qplot(data = df, x=ProsperScore)+
+  facet_wrap(~LoanStatus)
+```
+
+The first think I notice is that some of these categories have very small sample sizes. Four categories: Chargedoff, Completed, Current, and Defaulted seem to have plenty of samples, but at this point I'm considering grouping all the "Past Due" categories together to have enough to make comparisons. 
+
+```{r}
+ggplot(aes(x=ProsperScore, y=EstimatedReturn), data = df)+
+  geom_point()
+ggplot(aes(x=DebtToIncomeRatio, y=EstimatedReturn), data = df)+
+  geom_point(alpha=.05)+
+  scale_x_continuous(limits = c(0, 2.5))
+ggplot(aes(x=LoanStatus, y=CreditScoreRangeLower), data=df)+
+  geom_boxplot()
+
+
+```
+
+Now we're getting somewhere. The first two plots are overplotted, and seem more like noise than any discernable trend. But by making boxplots for each loan status, we can see that the "positive outcome" groups Current and Completed have somewhat higher median lower boundary for their credit score than the "negative outcome" categories of Chargedoff and Defaulted. 
+
+
+Now I want to investigate the structure of some of the variables that seem particularly interesting. Debt to Income ratio is a big consideration for credit-worthiness, so let's look at it closely.  
+
+```{r}
+ggplot(aes(x=DebtToIncomeRatio), data=df)+
+  geom_histogram(binwidth=.1)+
+  scale_x_log10()
+
+```
+Here, I used a log scale because the original plot was heavily skewed. 
+
+```{r}
+ggplot(aes(x=LoanOriginalAmount), data=df)+
+  geom_histogram(binwidth=2000)
+ggplot(aes(x=ListingCategory..numeric.), data=df)+
+  geom_bar(binwidth=1)
+ggplot(aes(x=ListingCategory..numeric.), data=subset(df, LoanStatus %in% c('Chargedoff', 'Completed','Current', 'Defaulted')))+
+  geom_bar(binwidth=1)+
+  facet_wrap(~LoanStatus, ncol=1)
+```
+It looks like there are loan amounts that are more popular than others: increments of 5000 dollars. 
+
+According to the description of ListingCategory it is "the category of the listing that the borrower selected when posting their listing." Debt Consolidation, coded as 1, is by far the most popular reason. 
+
+Then I tried looking at whether different listings had different behavior with LoanStatus. Unfortunately, graphing things side by side isn't very revealing for this question, because the sample sizes are different. 
+
